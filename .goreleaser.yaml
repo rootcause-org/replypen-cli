@@ -1,0 +1,90 @@
+# GoReleaser builds the cross-platform binaries so nobody needs Go to USE `rp` — tag `vX.Y.Z`, push,
+# and the release workflow (.github/workflows/release.yml) cross-compiles and attaches archives +
+# checksums to the GitHub Release. `go install` stays the path for people who already have Go.
+#   docs: https://goreleaser.com
+version: 2
+
+project_name: replypen-cli
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: rp
+    main: ./cmd/rp
+    binary: rp
+    env:
+      - CGO_ENABLED=0 # static binaries — no libc dependency, run anywhere
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: rp
+    # e.g. rp_0.1.0_darwin_arm64.tar.gz
+    name_template: "rp_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+release:
+  github:
+    owner: rootcause-org
+    name: replypen-cli
+
+# --- Homebrew (macOS) --------------------------------------------------------
+# Publishes a `brew install rootcause-org/replypen/rp` CASK on every release by committing
+# Casks/rp.rb to rootcause-org/homebrew-replypen. Two one-time prerequisites:
+#   1. public repo rootcause-org/homebrew-replypen exists (the tap)
+#   2. repo secret HOMEBREW_TAP_GITHUB_TOKEN holds a token with contents:write on homebrew-replypen —
+#      the default GITHUB_TOKEN is scoped to *this* repo only and can't push to a second one.
+#      Wired into release.yml's env block.
+#
+# WHY A SEPARATE TAP REPO: the sibling `rc` cask already lives in rootcause-org/homebrew-tap, and a
+# GitHub org can't host two repos of the same name. So replypen gets its OWN tap, homebrew-replypen,
+# which Homebrew exposes as the `rootcause-org/replypen` tap → `brew install rootcause-org/replypen/rp`.
+#
+# WHY A CASK, NOT A FORMULA: Homebrew installs a non-bottled FORMULA through a sandbox + a Ruby PTY to
+# stream build output. On some macOS setups that PTY can't be allocated and the install dies with
+# "can't get Master/Slave device" (Ruby PTY.open failure — Ruby bug 15607). A CASK installs a prebuilt
+# artifact by *linking the binary* (no sandbox, no PTY), so it sidesteps the failure entirely.
+#
+# WHY MACOS-ONLY: casks are macOS-only. Linux/WSL and Windows install via scripts/install.sh and
+# scripts/install.ps1 (see README), which need no Homebrew at all. Go users still have
+# `go install …/cmd/rp@latest`.
+homebrew_casks:
+  - name: rp
+    repository:
+      owner: rootcause-org
+      name: homebrew-replypen
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Casks
+    homepage: "https://github.com/rootcause-org/replypen-cli"
+    description: "Static-token scriptable client over replypen's /api/v1/debug — trace threads, audit triage, detect providers"
+    # The binary is unsigned, so Homebrew's download tags it with com.apple.quarantine and Gatekeeper
+    # would block the first run. Strip the xattr on install so `rp` just works.
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/rp"]
+          end

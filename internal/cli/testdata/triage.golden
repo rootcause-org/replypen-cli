@@ -1,0 +1,3 @@
+RECEIVED              SENDER                    SUBJECT                             PROCESS  CATEGORY   CONF  REASON
+2026-06-20T08:00:00Z  buyer@example.com         Invoice question about order #4821  yes      billing    0.91  Sender asks about an invoice; actionable support r…
+2026-06-20T07:30:00Z  newsletter@promo.example  50% off this weekend!               no       marketing  0.04  Bulk promotional mail; not a support request.

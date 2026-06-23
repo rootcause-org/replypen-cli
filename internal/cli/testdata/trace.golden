@@ -1,0 +1,16 @@
+Thread:   aaaaaaaa-1111-1111-1111-111111111111
+Subject:  Invoice question about order #4821
+Status:   draft_created
+Channel:  google
+Mailbox:  support@acme.com (google)
+Project:  acme-support
+Session:  99999999-9999-9999-9999-999999999999
+
+Timeline (6):
+  TS                    TYPE      LABEL                           DETAIL
+  2026-06-20T08:00:00Z  message   inbound from buyer@example.com  Invoice question about order #4821
+  2026-06-20T08:00:02Z  log       triage ok                       category=billing should_process=true
+  2026-06-20T08:00:05Z  delivery  outbound webhook → 200          turn 0 to https://hooks.acme.example/replypen
+  2026-06-20T08:04:30Z  delivery  callback ← 200                  draft + note returned
+  2026-06-20T08:04:31Z  note      note injected                   Customer has 2 open invoices totalling $480.
+  2026-06-20T08:04:32Z  draft     draft placed                    status=placed

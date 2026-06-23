@@ -1,0 +1,14 @@
+version: "2"
+
+# The render + command layers write formatted output to an io.Writer (a TTY, a pipe, or a test buffer). A
+# failed write there is unrecoverable and not worth threading an error through every fmt.Fprintf — so
+# errcheck is told to ignore the fmt.Fprint* family, matching how the sibling rootcause-cli is written.
+# Every other errcheck site (file/HTTP/JSON) is still enforced.
+linters:
+  settings:
+    errcheck:
+      exclude-functions:
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - fmt.Fprint
+        - (*text/tabwriter.Writer).Flush

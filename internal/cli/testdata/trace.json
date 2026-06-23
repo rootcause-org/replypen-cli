@@ -1,0 +1,52 @@
+{
+  "thread": {
+    "id": "aaaaaaaa-1111-1111-1111-111111111111",
+    "external_thread_id": "thread-f:1866870901077892614",
+    "subject": "Invoice question about order #4821",
+    "status": "draft_created",
+    "channel": "google",
+    "active_session_id": "99999999-9999-9999-9999-999999999999",
+    "pipeline_started_at": "2026-06-20T08:00:01Z",
+    "pending_reentry": false,
+    "triage_result": { "should_process": true, "category": "billing", "confidence": 0.91 },
+    "injection_result": { "blocked": false, "confidence": 0.02 },
+    "error_message": null,
+    "processor_failure": null,
+    "decline_reason": null,
+    "created_at": "2026-06-20T08:00:00Z",
+    "updated_at": "2026-06-20T08:05:00Z"
+  },
+  "mailbox": { "id": "mb-1", "email": "support@acme.com", "provider": "google", "status": "active" },
+  "project": { "id": "11111111-1111-1111-1111-111111111111", "slug": "acme-support", "tenant_codename": "acme", "webhook_url": "https://hooks.acme.example/replypen" },
+  "messages": [
+    { "id": "msg-1", "external_message_id": "19e875318442de06", "direction": "inbound", "is_draft": false,
+      "from": "buyer@example.com", "to": ["support@acme.com"], "cc": [], "subject": "Invoice question about order #4821",
+      "date": "2026-06-20T08:00:00Z", "body_cleaned_len": 412, "labels": [] }
+  ],
+  "logs": [
+    { "step": "triage", "status": "ok", "details": { "category": "billing" }, "duration_ms": 1200, "created_at": "2026-06-20T08:00:02Z" },
+    { "step": "clean", "status": "ok", "details": {}, "duration_ms": 800, "created_at": "2026-06-20T08:00:03Z" },
+    { "step": "webhook_send", "status": "ok", "details": { "response_status": 200 }, "duration_ms": 340, "created_at": "2026-06-20T08:00:05Z" }
+  ],
+  "deliveries": [
+    { "id": "dl-1", "direction": "outbound", "session_id": "99999999-9999-9999-9999-999999999999", "turn_index": 0,
+      "url": "https://hooks.acme.example/replypen", "response_status": 200, "attempt": 1, "created_at": "2026-06-20T08:00:05Z" },
+    { "id": "dl-2", "direction": "callback", "session_id": "99999999-9999-9999-9999-999999999999", "turn_index": 0,
+      "url": "/api/v1/webhooks/callback", "response_status": 200, "attempt": 1, "created_at": "2026-06-20T08:04:30Z" }
+  ],
+  "drafts": [
+    { "id": "dr-1", "status": "placed", "proposed_at": "2026-06-20T08:04:31Z", "placed_at": "2026-06-20T08:04:32Z", "deletion_reason": null, "external_draft_id": "r-998877" }
+  ],
+  "notes": [
+    { "id": "nt-1", "code": "context", "kind": "internal", "status": "active",
+      "body_markdown": "Customer has 2 open invoices totalling $480.", "created_at": "2026-06-20T08:04:31Z", "deleted_at": null }
+  ],
+  "timeline": [
+    { "ts": "2026-06-20T08:00:00Z", "type": "message", "label": "inbound from buyer@example.com", "detail": "Invoice question about order #4821" },
+    { "ts": "2026-06-20T08:00:02Z", "type": "log", "label": "triage ok", "detail": "category=billing should_process=true" },
+    { "ts": "2026-06-20T08:00:05Z", "type": "delivery", "label": "outbound webhook → 200", "detail": "turn 0 to https://hooks.acme.example/replypen" },
+    { "ts": "2026-06-20T08:04:30Z", "type": "delivery", "label": "callback ← 200", "detail": "draft + note returned" },
+    { "ts": "2026-06-20T08:04:31Z", "type": "note", "label": "note injected", "detail": "Customer has 2 open invoices totalling $480." },
+    { "ts": "2026-06-20T08:04:32Z", "type": "draft", "label": "draft placed", "detail": "status=placed" }
+  ]
+}

@@ -1,0 +1,3 @@
+received_at,sender,subject,thread_status,should_process,category,confidence,reason,thread_id,mailbox
+2026-06-20T08:00:00Z,buyer@example.com,Invoice question about order #4821,triage_classified,true,billing,0.91,Sender asks about an invoice; actionable support request.,aaaaaaaa-1111-1111-1111-111111111111,support@acme.com
+2026-06-20T07:30:00Z,newsletter@promo.example,50% off this weekend!,triage_skipped,false,marketing,0.04,Bulk promotional mail; not a support request.,cccccccc-3333-3333-3333-333333333333,support@acme.com

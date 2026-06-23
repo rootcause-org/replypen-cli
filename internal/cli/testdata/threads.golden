@@ -1,0 +1,3 @@
+ID        STATUS         CHANNEL    SENDER             SUBJECT                             UPDATED
+aaaaaaaa  webhook_sent   google     buyer@example.com  Invoice question about order #4821  2026-06-20T08:05:00Z
+bbbbbbbb  draft_created  microsoft  amy@buyer.io       Re: shipping delay                  2026-06-20T09:12:00Z

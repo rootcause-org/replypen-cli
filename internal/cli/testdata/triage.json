@@ -1,0 +1,12 @@
+{ "decisions": [
+  { "thread_id": "aaaaaaaa-1111-1111-1111-111111111111", "received_at": "2026-06-20T08:00:00Z",
+    "sender": "buyer@example.com", "subject": "Invoice question about order #4821",
+    "thread_status": "triage_classified", "should_process": true, "category": "billing",
+    "confidence": 0.91, "reason": "Sender asks about an invoice; actionable support request.",
+    "mailbox": "support@acme.com" },
+  { "thread_id": "cccccccc-3333-3333-3333-333333333333", "received_at": "2026-06-20T07:30:00Z",
+    "sender": "newsletter@promo.example", "subject": "50% off this weekend!",
+    "thread_status": "triage_skipped", "should_process": false, "category": "marketing",
+    "confidence": 0.04, "reason": "Bulk promotional mail; not a support request.",
+    "mailbox": "support@acme.com" }
+] }

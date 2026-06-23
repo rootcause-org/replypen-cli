@@ -1,0 +1,37 @@
+# Thread aaaaaaaa — acme-support · draft_created · google
+
+- **Thread ID:** `aaaaaaaa-1111-1111-1111-111111111111`
+- **External id:** `thread-f:1866870901077892614`
+- **Subject:** Invoice question about order #4821
+- **Mailbox:** `support@acme.com` (google)
+- **Session:** `99999999-9999-9999-9999-999999999999`
+- **Created / Updated:** 2026-06-20T08:00:00Z / 2026-06-20T08:05:00Z
+- **Counts:** 1 messages · 3 logs · 2 deliveries · 1 drafts · 1 notes
+- **Timeline (full, queryable):** `aaaaaaaa-acme-support.jsonl` — one JSON object per entry; jq it (see Drill down).
+
+## Outcome
+
+- **Draft:** placed
+- **Notes:** 1 injected
+
+## Timeline
+
+| ts | type | label | detail |
+|---|---|---|---|
+| 2026-06-20T08:00:00Z | message | inbound from buyer@example.com | Invoice question about order #4821 |
+| 2026-06-20T08:00:02Z | log | triage ok | category=billing should_process=true |
+| 2026-06-20T08:00:05Z | delivery | outbound webhook → 200 | turn 0 to https://hooks.acme.example/replypen |
+| 2026-06-20T08:04:30Z | delivery | callback ← 200 | draft + note returned |
+| 2026-06-20T08:04:31Z | note | note injected | Customer has 2 open invoices totalling $480. |
+| 2026-06-20T08:04:32Z | draft | draft placed | status=placed |
+
+## Drill down — `aaaaaaaa-acme-support.jsonl`
+
+One JSON object per line: line 1 is the thread header, the rest are timeline entries keyed by `type`. Pull the FULL detail with jq:
+
+```sh
+jq -r 'select(.type=="delivery")' aaaaaaaa-acme-support.jsonl   # every outbound/callback delivery
+jq -r 'select(.type=="log") | .label + " " + .detail' aaaaaaaa-acme-support.jsonl   # pipeline steps
+jq -r 'select(.type=="draft" or .type=="note")' aaaaaaaa-acme-support.jsonl   # placed artifacts
+jq -r 'select(.type=="thread").triage_result' aaaaaaaa-acme-support.jsonl   # the triage decision blob
+```
