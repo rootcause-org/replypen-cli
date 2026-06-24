@@ -20,10 +20,22 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: "1.25"
+      # The Homebrew cask publish needs a token with contents:write on the separate
+      # homebrew-replypen repo (GITHUB_TOKEN is scoped to THIS repo only). Until that
+      # secret is set, skip the cask step so binaries + checksums still publish and the
+      # workflow stays green; it auto-enables the moment the secret exists.
+      - id: flags
+        run: |
+          if [ -z "${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}" ]; then
+            echo "extra=--skip=homebrew" >> "$GITHUB_OUTPUT"
+            echo "::warning::HOMEBREW_TAP_GITHUB_TOKEN unset — skipping the Homebrew cask publish (binaries still ship)."
+          else
+            echo "extra=" >> "$GITHUB_OUTPUT"
+          fi
       - uses: goreleaser/goreleaser-action@v7
         with:
           version: "~> v2"
-          args: release --clean
+          args: release --clean ${{ steps.flags.outputs.extra }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Lets GoReleaser push the Homebrew cask to rootcause-org/homebrew-replypen (see .goreleaser.yaml):
