@@ -1,6 +1,6 @@
 ---
 name: replypen-cli
-description: The `rp` CLI — a static-token, scriptable Go client over replypen's thin /api/v1/debug surface. It traces a thread end to end (the offline twin of the status page), audits triage decisions, lists projects/threads, mints project-scoped CLI tokens, and bundles the local helpers — DNS provider detection (can this domain onboard?), Gmail/Outlook id decoding, and the tenant→project→mailbox onboarding wrappers. Auth is a static bearer (a super-admin token = all projects, or a project-scoped `rpc_live_` token); output is a table on a TTY and JSON when piped (`-o json` passes the server body through verbatim). Use when working in this repo — adding/changing a command, the HTTP client, the config/token store, or the table/JSON render layer — or when porting one of replypen's Python debug scripts to a `rp` subcommand.
+description: The `rp` CLI — a static-token, scriptable Go client over replypen's thin /api/v1/debug surface. It traces a thread end to end (the offline twin of the status page), audits triage decisions, lists projects/threads, mints tenant- and project-scoped CLI tokens, and bundles the local helpers — DNS provider detection (can this domain onboard?), Gmail/Outlook id decoding, and the tenant→project→mailbox onboarding wrappers. Auth is a static bearer resolved server-side into one of three scopes (a super-admin token = all projects, a tenant-scoped `rpt_live_` token = all projects in one tenant, or a project-scoped `rpc_live_` token = one project); output is a table on a TTY and JSON when piped (`-o json` passes the server body through verbatim). Use when working in this repo — adding/changing a command, the HTTP client, the config/token store, or the table/JSON render layer — or when porting one of replypen's Python debug scripts to a `rp` subcommand.
 ---
 
 # replypen-cli (`rp`) — a static-token window into replypen's debug surface
@@ -18,11 +18,12 @@ that replaces a pile of replypen's Python debug scripts (see the table below).
 |---|---|---|
 | `rp login --token … [--base-url …]` | local token store (`~/.config/replypen/config.toml`) | persist `{token, base_url}` for a profile (0600) |
 | `rp logout` | local store | clear the profile's token + base URL |
-| `rp whoami` | `GET /api/v1/debug/whoami` | resolve the token's scope (admin vs project) — verifies end to end |
-| `rp projects` | `GET /api/v1/debug/projects` | projects visible to the token (all for admin, one for project-scoped) |
+| `rp whoami` | `GET /api/v1/debug/whoami` | resolve the token's scope (admin / tenant / project) — verifies end to end |
+| `rp projects` | `GET /api/v1/debug/projects` | projects visible to the token (all for admin, all-in-tenant for tenant-scoped, one for project-scoped) |
 | `rp threads <slug> [--limit] [--status]` | `GET …/projects/{slug}/threads` | recent threads, newest first, optional status filter |
 | `rp triage <slug> [--limit] [--csv]` | `GET …/projects/{slug}/triage` | last N inbound threads + their triage decision |
 | `rp thread trace <id> [--md] [--jsonl] [--out-dir]` | `GET …/threads/{id}/trace` | the full assembled bundle; render the merged timeline / decompose to files |
+| `rp tenant mint-token <codename>` | `POST …/tenants/{codename}/cli-token` (admin) | mint/rotate a tenant-scoped CLI token — all projects in the tenant (shown once) |
 | `rp project mint-token <slug>` | `POST …/projects/{slug}/cli-token` (admin) | mint/rotate a project-scoped CLI token (shown once) |
 | `rp provider detect <domain\|email …>` | **local** DNS | classify the email backend + onboardability (no API) |
 | `rp id gmail <id>` / `rp id outlook <id>` | **local** pure math | decode a provider id; tell you which DB column matches (no API) |
@@ -44,7 +45,9 @@ A bearer is a **fixed string**; there is no refresh, no expiry, no login flow. T
 into a **scope** on every request:
 
 - **admin** — the token equals the server's `REPLYPEN_CLI_ADMIN_TOKEN`. Scope = **all** tenants/projects.
-  Required to mint project tokens and to trace across projects.
+  Required to mint tenant + project tokens and to trace across tenants.
+- **tenant** — a `rpt_live_<rand>` token whose SHA-256 matches a `tenants.cli_token_hash`. Scope = **all**
+  projects under that **one** tenant; reaching into another tenant → `403 FORBIDDEN`.
 - **project** — a `rpc_live_<rand>` token whose SHA-256 matches a `projects.cli_token_hash`. Scope =
   that **one** project; cross-project reads → `403 FORBIDDEN`.
 

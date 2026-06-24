@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/rootcause-org/replypen-cli/internal/client"
+	"github.com/rootcause-org/replypen-cli/internal/render"
 )
 
 // --- table-mode golden tests: each pins one renderer's human output ----------------------------------
@@ -81,6 +82,25 @@ func TestMintTokenTable(t *testing.T) {
 		t.Fatalf("project mint-token: %v", err)
 	}
 	assertGolden(t, "mint_token.golden", out.String())
+}
+
+func TestTenantMintTokenTable(t *testing.T) {
+	srv := stubServer(t)
+	defer srv.Close()
+	e, out, _ := newTestEnv(t, srv, "table")
+	if err := run(t, e, "tenant", "mint-token", "acme"); err != nil {
+		t.Fatalf("tenant mint-token: %v", err)
+	}
+	assertGolden(t, "tenant_mint_token.golden", out.String())
+}
+
+// TestWhoamiTenantTable pins the tenant-scope whoami line. It renders directly (the shared stub serves the
+// project-scope fixture), so the three-scope formatting is locked without a second stub endpoint.
+func TestWhoamiTenantTable(t *testing.T) {
+	codename := "acme"
+	var out strings.Builder
+	render.Whoami(&out, &client.Whoami{Scope: "tenant", TenantCodename: &codename})
+	assertGolden(t, "whoami_tenant.golden", out.String())
 }
 
 // --- JSON-mode passthrough: -o json must emit the canned server body verbatim ------------------------

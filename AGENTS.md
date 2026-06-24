@@ -31,6 +31,6 @@ as a table on a TTY or **JSON when piped**.
 
 ## Scope guards (push back if asked to cross them)
 - **No DB access in the CLI.** All data comes through `/api/v1/debug` — keep those server endpoints **thin** (raw token-scoped rows, no server-computed views).
-- **Static-token auth only — no OAuth, no token minting beyond the standard flows.** A bearer is a fixed string the server resolves into a scope (admin vs one project); there is no refresh. `rp login` just persists `{token, base_url}` to the 0600 store.
+- **Static-token auth only — no OAuth, no token minting beyond the standard flows.** A bearer is a fixed string the server resolves into a scope (admin / tenant / one project); there is no refresh. `rp login` just persists `{token, base_url}` to the 0600 store.
 - **Local-only commands need no token/base-url:** `provider detect`, `id gmail|outlook` are pure functions (DNS / base-conversion). They never call `newClient`.
 - **`rp upgrade` is the only command that reaches outside replypen** (GitHub releases, self-replace). Keep it that way.

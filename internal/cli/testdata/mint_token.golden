@@ -1,2 +1,3 @@
 project: acme-support
+tenant:  acme
 token:   rpc_live_minted_token_value

@@ -10,7 +10,7 @@ with one binary.
 
 ```console
 $ rp whoami
-scope: admin (all projects)
+Scope: admin (all projects)
 
 $ rp thread trace 2451b0f2 --md --jsonl     # offline twin of the status page
 .replypen/debug/2451b0f2-acme-support.md
@@ -74,8 +74,9 @@ sha256 first). On a Homebrew install it defers to `brew upgrade rp` so it doesn'
 ## Configure
 
 `rp` carries a **static bearer token** — there's no OAuth and no login flow, you paste a token you were
-given (a super-admin token, or a project-scoped `rpc_live_…` token). `rp login` stores it under a profile
-in `~/.config/replypen/config.toml` (0600); every later command reads it:
+given (a super-admin token, a tenant-scoped `rpt_live_…` token, or a project-scoped `rpc_live_…` token).
+`rp login` stores it under a profile in `~/.config/replypen/config.toml` (0600); every later command
+reads it:
 
 ```bash
 rp login --token rpc_live_xxxxxxxx --base-url https://app.replypen.com
@@ -129,7 +130,7 @@ Global flags: `--profile <name>` picks the stored token; `--token` / `--base-url
 rp whoami
 rp whoami -o json | jq -r .scope
 
-# Projects this token can see (all for admin, one for a project token)
+# Projects this token can see (all for admin, all in the tenant for a tenant token, one for a project token)
 rp projects
 rp projects | jq '.projects[] | {slug, mailbox_count}'
 
@@ -217,27 +218,35 @@ surfaced verbatim (`CODE: message`) with a non-zero exit.
 
 ## Auth & scopes
 
-A bearer token resolves **server-side** into one of two scopes — there is no `--scope` flag, the token
+A bearer token resolves **server-side** into one of three scopes — there is no `--scope` flag, the token
 *is* the scope:
 
 | Scope | Token | Sees |
 |---|---|---|
-| **admin** | the server's super-admin token | **all** tenants/projects; can mint project tokens and trace any thread |
+| **admin** | the server's super-admin token | **all** tenants/projects; can mint tenant + project tokens and trace any thread |
+| **tenant** | a `rpt_live_…` token | **all** projects under **one** tenant; reaching into another tenant returns `403 FORBIDDEN` |
 | **project** | a `rpc_live_…` token | **one** project; cross-project reads return `403 FORBIDDEN` |
 
-Mint a project-scoped token **as admin** (the server shows it **once** and stores only its hash):
+Mint a scoped token **as admin** (the server shows it **once** and stores only its hash):
 
 ```bash
+# Tenant-scoped — sees every project under the tenant
+rp tenant mint-token acme --profile admin
+#   tenant: acme
+#   token:  rpt_live_xxxxxxxx           ← hand this to the tenant, store it now
+
+# Project-scoped — sees just that one project
 rp project mint-token acme-support --profile admin
 #   project: acme-support
+#   tenant:  acme
 #   token:   rpc_live_xxxxxxxx          ← hand this to the project, store it now
 ```
 
-Then the project logs in with that token and is automatically scoped to itself:
+Then they log in with the token and are automatically scoped to it:
 
 ```bash
 rp login --token rpc_live_xxxxxxxx --base-url https://app.replypen.com
-rp whoami            # scope: project (acme-support)
+rp whoami            # Scope: project acme-support (tenant acme)
 rp threads acme-support
 ```
 

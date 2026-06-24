@@ -62,7 +62,14 @@ func stubServer(t *testing.T) *httptest.Server {
 	mux.HandleFunc("POST /api/v1/debug/projects/{slug}/cli-token", func(w http.ResponseWriter, r *http.Request) {
 		requireAuth(t, r)
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"token":"rpc_live_minted_token_value","project_slug":"` + r.PathValue("slug") + `"}`))
+		_, _ = w.Write([]byte(`{"token":"rpc_live_minted_token_value","scope":"project","project_slug":"` +
+			r.PathValue("slug") + `","tenant_codename":"acme"}`))
+	})
+	mux.HandleFunc("POST /api/v1/debug/tenants/{codename}/cli-token", func(w http.ResponseWriter, r *http.Request) {
+		requireAuth(t, r)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"token":"rpt_live_minted_token_value","scope":"tenant","tenant_codename":"` +
+			r.PathValue("codename") + `"}`))
 	})
 
 	return httptest.NewServer(mux)

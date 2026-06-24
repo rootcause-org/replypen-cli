@@ -50,6 +50,11 @@ func MintTokenPath(slug string) string {
 	return "/api/v1/debug/projects/" + url.PathEscape(slug) + "/cli-token"
 }
 
+// MintTenantTokenPath builds the tenant-scoped mint endpoint (admin only).
+func MintTenantTokenPath(codename string) string {
+	return "/api/v1/debug/tenants/" + url.PathEscape(codename) + "/cli-token"
+}
+
 // ThreadsPath builds the project-threads path with optional limit/status filters.
 func ThreadsPath(slug string, limit int, status string) string {
 	q := url.Values{}
@@ -113,6 +118,11 @@ func (c *Client) Trace(ctx context.Context, id string) (*Trace, error) {
 func (c *Client) MintToken(ctx context.Context, slug string) (*MintTokenResponse, error) {
 	var out MintTokenResponse
 	return &out, c.do(ctx, http.MethodPost, MintTokenPath(slug), nil, nil, &out)
+}
+
+func (c *Client) MintTenantToken(ctx context.Context, codename string) (*MintTokenResponse, error) {
+	var out MintTokenResponse
+	return &out, c.do(ctx, http.MethodPost, MintTenantTokenPath(codename), nil, nil, &out)
 }
 
 // --- onboarding wrappers over existing replypen endpoints --------------------------------------------

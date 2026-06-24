@@ -13,12 +13,18 @@ import (
 	"github.com/rootcause-org/replypen-cli/internal/client"
 )
 
-// Whoami prints the resolved token scope: admin (all projects) or a single project.
+// Whoami prints the resolved token scope, one of three: admin (all projects), tenant (all projects in
+// one tenant), or project (one project, naming its tenant).
 func Whoami(w io.Writer, who *client.Whoami) {
-	fmt.Fprintf(w, "Scope: %s\n", who.Scope)
-	if who.Scope == "project" {
-		fmt.Fprintf(w, "Project: %s\n", deref(who.ProjectSlug))
-		fmt.Fprintf(w, "Tenant:  %s\n", deref(who.TenantCodename))
+	switch who.Scope {
+	case "admin":
+		fmt.Fprintln(w, "Scope: admin (all projects)")
+	case "tenant":
+		fmt.Fprintf(w, "Scope: tenant %s (all projects in tenant)\n", deref(who.TenantCodename))
+	case "project":
+		fmt.Fprintf(w, "Scope: project %s (tenant %s)\n", deref(who.ProjectSlug), deref(who.TenantCodename))
+	default:
+		fmt.Fprintf(w, "Scope: %s\n", who.Scope)
 	}
 }
 

@@ -46,6 +46,9 @@ func newProjectMintTokenCmd(e *env) *cobra.Command {
 				return err
 			}
 			fmt.Fprintf(e.out, "project: %s\n", resp.ProjectSlug)
+			if resp.TenantCodename != "" {
+				fmt.Fprintf(e.out, "tenant:  %s\n", resp.TenantCodename)
+			}
 			fmt.Fprintf(e.out, "token:   %s\n", resp.Token)
 			fmt.Fprintln(e.err, "store this now — it is shown once and only the hash is kept server-side")
 			return nil
@@ -91,14 +94,47 @@ func newProjectCreateCmd(e *env) *cobra.Command {
 	return cmd
 }
 
-// newTenantCmd builds `rp tenant` with the `register` subcommand.
+// newTenantCmd builds `rp tenant` with the `register` + `mint-token` subcommands.
 func newTenantCmd(e *env) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tenant",
 		Short: "Tenant management commands",
 	}
-	cmd.AddCommand(newTenantRegisterCmd(e))
+	cmd.AddCommand(newTenantRegisterCmd(e), newTenantMintTokenCmd(e))
 	return cmd
+}
+
+// newTenantMintTokenCmd builds `rp tenant mint-token <codename>` — mint/rotate a tenant-scoped CLI token
+// (admin scope) that sees every project under the tenant. Mirrors `rp project mint-token`: the server
+// returns the `rpt_live_…` token ONCE (stores only the hash), so the command prints it plainly.
+func newTenantMintTokenCmd(e *env) *cobra.Command {
+	return &cobra.Command{
+		Use:   "mint-token <codename>",
+		Short: "Mint a tenant-scoped CLI token (admin only; shown once)",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(_ *cobra.Command, args []string) error {
+			codename := args[0]
+			c, err := e.newClient()
+			if err != nil {
+				return err
+			}
+			if e.jsonOut() {
+				raw, err := c.Raw(e.ctx(), "POST", client.MintTenantTokenPath(codename), nil, nil)
+				if err != nil {
+					return err
+				}
+				return render.JSON(e.out, raw)
+			}
+			resp, err := c.MintTenantToken(e.ctx(), codename)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(e.out, "tenant: %s\n", resp.TenantCodename)
+			fmt.Fprintf(e.out, "token:  %s\n", resp.Token)
+			fmt.Fprintln(e.err, "store this now — it is shown once and only the hash is kept server-side")
+			return nil
+		},
+	}
 }
 
 // newTenantRegisterCmd builds `rp tenant register` — POST /api/v1/register with the X-Admin-Secret header.

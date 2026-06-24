@@ -1,3 +1,1 @@
-Scope: project
-Project: acme-support
-Tenant:  acme
+Scope: project acme-support (tenant acme)

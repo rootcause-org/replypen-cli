@@ -9,10 +9,11 @@ import "encoding/json"
 
 // --- GET /api/v1/debug/whoami ------------------------------------------------------------------------
 
-// Whoami is the resolved token scope. ProjectSlug/TenantCodename are null for an admin token, so they're
-// pointers to round-trip the JSON null distinction.
+// Whoami is the resolved token scope. The two codename/slug fields are populated per scope and null
+// otherwise (admin → both null; tenant → tenant_codename only; project → both), so they're pointers to
+// round-trip the JSON null distinction.
 type Whoami struct {
-	Scope          string  `json:"scope"` // "admin" | "project"
+	Scope          string  `json:"scope"` // "admin" | "tenant" | "project"
 	ProjectSlug    *string `json:"project_slug"`
 	TenantCodename *string `json:"tenant_codename"`
 }
@@ -178,11 +179,17 @@ type TimelineEntry struct {
 	Detail string `json:"detail"`
 }
 
-// --- POST /api/v1/debug/projects/{slug}/cli-token ----------------------------------------------------
+// --- POST …/cli-token (tenant + project mint) --------------------------------------------------------
 
+// MintTokenResponse is the one tolerant shape for both mint endpoints: the project mint
+// (POST …/projects/{slug}/cli-token) returns token+scope+project_slug+tenant_codename; the tenant mint
+// (POST …/tenants/{codename}/cli-token) returns token+scope+tenant_codename (no project_slug). Every
+// scope-specific field is optional so one struct decodes both.
 type MintTokenResponse struct {
-	Token       string `json:"token"`
-	ProjectSlug string `json:"project_slug"`
+	Token          string `json:"token"`
+	Scope          string `json:"scope"`           // "tenant" | "project"
+	ProjectSlug    string `json:"project_slug"`    // project mint only
+	TenantCodename string `json:"tenant_codename"` // both mints
 }
 
 // --- onboarding wrappers over existing replypen endpoints --------------------------------------------

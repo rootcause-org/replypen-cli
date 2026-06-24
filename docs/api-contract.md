@@ -7,32 +7,39 @@ local `--md`/`--jsonl` decomposition for thread traces). Field names in the CLI'
 
 ## Auth — static bearer token (NO OAuth)
 
-`Authorization: Bearer <token>`. Two token kinds, resolved server-side into a **scope**:
+`Authorization: Bearer <token>`. Three token kinds, resolved server-side into a **scope**:
 
 - **admin** — the token equals the server's `REPLYPEN_CLI_ADMIN_TOKEN` env value (constant-time
   compare). Scope = ALL tenants/projects. If the env var is unset, the whole `/api/v1/debug/*`
   surface 404s (fail closed, mirrors `adminSecretGate`).
-- **project** — SHA-256 of the token matches a `projects.cli_token_hash`. Scope = that one project.
+- **tenant** — SHA-256 of the token matches a `tenants.cli_token_hash` (`rpt_live_…`). Scope = ALL
+  projects under that one tenant (`rp projects` lists several). Reads across the tenant's own
+  projects are allowed; reaching into another tenant → `403 FORBIDDEN`.
+- **project** — SHA-256 of the token matches a `projects.cli_token_hash` (`rpc_live_…`). Scope = that
+  one project.
 
-Middleware lives in `internal/clidebug/` (new package). It attaches a `Scope{Admin bool,
-ProjectID uuid, ProjectSlug, TenantCodename}` to the request context. Project-scoped callers may
-only read their own project's threads/data; cross-project access → `403 FORBIDDEN`. Missing/bad
-token → `401 UNAUTHORIZED`. Reuse `web.Error`/`web.JSON` and the `{"error","code"}` envelope.
+Middleware lives in `internal/clidebug/`. It attaches a `Scope{Admin bool, TenantID, TenantCodename,
+ProjectID, ProjectSlug}` to the request context. Tenant- and project-scoped callers may only read
+within their scope; out-of-scope access → `403 FORBIDDEN`. Missing/bad token → `401 UNAUTHORIZED`.
+Reuse `web.Error`/`web.JSON` and the `{"error","code"}` envelope.
 
-Token format for project tokens: `rpc_live_<32+ rand>`; hashed with the existing
-`tenant.HashToken` (SHA-256) pattern, stored in new nullable column `projects.cli_token_hash`.
+Token formats: tenant tokens `rpt_live_<32+ rand>`, project tokens `rpc_live_<32+ rand>`; both hashed
+with the existing `tenant.HashToken` (SHA-256) pattern, stored in nullable columns
+`tenants.cli_token_hash` / `projects.cli_token_hash`.
 
 ## Endpoints
 
 ### `GET /api/v1/debug/whoami`
 Returns the resolved scope so `rp whoami` can verify a token.
 ```json
-{ "scope": "admin", "project_slug": null, "tenant_codename": null }
+{ "scope": "admin",   "project_slug": null,           "tenant_codename": null }
+{ "scope": "tenant",  "project_slug": null,           "tenant_codename": "acme" }
 { "scope": "project", "project_slug": "acme-support", "tenant_codename": "acme" }
 ```
 
 ### `GET /api/v1/debug/projects`
-admin → all projects; project-scoped → just the caller's project.
+admin → all projects; tenant-scoped → all projects under the tenant; project-scoped → just the
+caller's project.
 ```json
 { "projects": [
   { "id": "uuid", "slug": "acme-support", "tenant_codename": "acme",
@@ -62,8 +69,9 @@ Replacement for `triage_logs.py`: last N inbound threads + their triage decision
 
 ### `GET /api/v1/debug/threads/{id}/trace`
 Replacement for `trace_thread.py`. `{id}` accepts a replypen thread UUID **or** an
-external/provider thread id (resolve via `GetThreadByExternalIDAny`). Project-scoped tokens may
-only trace threads in their project. Returns the full assembled bundle; the CLI renders the
+external/provider thread id (resolve via `GetThreadByExternalIDAny`). Tenant-scoped tokens may trace
+any thread under the tenant; project-scoped tokens only threads in their project. Returns the full
+assembled bundle; the CLI renders the
 `timeline` to a status-page-style `.md` and a jq-able `.jsonl`.
 ```json
 {
@@ -94,10 +102,17 @@ stay reachable via `rp thread trace <id> -o json`.
 > `placed_at`/`deletion_reason`/`external_draft_id`, note `deleted_at`, log `duration_ms`, and delivery
 > `response_status` are all nullable. `labels` is always present (currently the server emits `[]`).
 
+### `POST /api/v1/debug/tenants/{codename}/cli-token`  (admin scope only)
+Mint/rotate the tenant-scoped CLI token (sees every project under the tenant). Returns it once
+(stores only the hash).
+```json
+{ "token": "rpt_live_…", "scope": "tenant", "tenant_codename": "acme" }  // shown once
+```
+
 ### `POST /api/v1/debug/projects/{slug}/cli-token`  (admin scope only)
 Mint/rotate the project-scoped CLI token. Returns it once (stores only the hash).
 ```json
-{ "token": "rpc_live_…", "project_slug": "acme-support" }  // shown once
+{ "token": "rpc_live_…", "scope": "project", "project_slug": "acme-support", "tenant_codename": "acme" }  // shown once
 ```
 
 ## CLI command ⇄ endpoint ladder
@@ -110,6 +125,7 @@ Mint/rotate the project-scoped CLI token. Returns it once (stores only the hash)
 | `rp threads <slug> [--limit] [--status]` | `GET …/projects/{slug}/threads` |
 | `rp triage <slug> [--limit] [--csv]` | `GET …/projects/{slug}/triage` |
 | `rp thread trace <id> [--md] [--jsonl] [--out-dir]` | `GET …/threads/{id}/trace` |
+| `rp tenant mint-token <codename>` | `POST …/tenants/{codename}/cli-token` (admin) |
 | `rp project mint-token <slug>` | `POST …/projects/{slug}/cli-token` (admin) |
 | `rp provider detect <domain|email>` | **local** DNS (no API) |
 | `rp id gmail <id>` / `rp id outlook <id>` | **local** pure math (no API) |
