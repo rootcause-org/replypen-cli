@@ -45,6 +45,10 @@ curl -fsSL https://raw.githubusercontent.com/rootcause-org/replypen-cli/main/scr
 Detects your arch, installs `rp` to `/usr/local/bin` (or `~/.local/bin`), and is idempotent — re-run to
 upgrade. Works on macOS too.
 
+> **Updating on Linux / WSL:** just run `rp upgrade` (self-replaces from the latest GitHub release —
+> see [Upgrading](#upgrading)). Homebrew is **not** an option here: `rp` ships as a macOS-only cask, so
+> `brew install …/rp` only works on macOS, not on WSL/Linux.
+
 **Windows (native PowerShell):**
 
 ```powershell
